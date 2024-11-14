@@ -22,8 +22,11 @@ struct ContentView: View {
         NavigationStack {
             List {
                 Section {
-                    TextField("Enter your word", text: $newWord)
-                        .textInputAutocapitalization(.never)
+                    HStack {
+                        TextField("Enter your word", text: $newWord)
+                            .textInputAutocapitalization(.never)
+                        Text("Score: \(usedWords.count)")
+                    }
                 }
 
                 Section {
@@ -42,6 +45,9 @@ struct ContentView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar {
+                Button("Restart", action: startGame)
+            }
         }
 
         .enableInjection()
@@ -52,19 +58,36 @@ struct ContentView: View {
             in: .whitespacesAndNewlines)
 
         guard answer.count > 0 else { return }
-        
+
         guard isOriginal(word: answer) else {
             wordError(title: "Word used already", message: "Be more original!")
             return
         }
-        
+
         guard isPossible(word: answer) else {
-            wordError(title: "Word not possible", message: "You can't spell that word from '\(rootWord)'")
+            wordError(
+                title: "Word not possible", message: "You can't spell that word from '\(rootWord)'")
             return
         }
-        
+
         guard isReal(word: answer) else {
-            wordError(title: "Word not recognised", message: "You can't just make them up, you know!")
+            wordError(
+                title: "Word not recognised", message: "You can't just make them up, you know!")
+            return
+        }
+
+        guard isLongEnough(word: answer) else {
+            wordError(title: "Word too short", message: "Words must be at least 3 letters long")
+            return
+        }
+
+        guard isNotRootWord(word: answer) else {
+            wordError(title: "Word is root word", message: "You can't use the root word")
+            return
+        }
+
+        guard isLongEnough(word: answer) else {
+            wordError(title: "Word too short", message: "Words must be at least 3 letters long")
             return
         }
 
@@ -83,6 +106,8 @@ struct ContentView: View {
             {
                 let allWords = startWords.components(separatedBy: .newlines)
                 rootWord = allWords.randomElement() ?? "silkworm"
+                usedWords = []
+                newWord = ""
                 return
             }
         }
@@ -115,6 +140,14 @@ struct ContentView: View {
             in: word, range: range, startingAt: 0, wrap: false, language: "en")
 
         return misspelledRange.location == NSNotFound
+    }
+
+    func isLongEnough(word: String) -> Bool {
+        word.count >= 3
+    }
+
+    func isNotRootWord(word: String) -> Bool {
+        word != rootWord
     }
 
     func wordError(title: String, message: String) {
